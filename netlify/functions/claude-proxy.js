@@ -1,5 +1,5 @@
 // APEX — Secure Anthropic API Proxy
-// File must be at: netlify/functions/claude-proxy.js
+// File: netlify/functions/claude-proxy.js
 
 exports.handler = async (event) => {
 
@@ -17,35 +17,15 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return { statusCode: 405, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // Check API key exists
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) {
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: 'ANTHROPIC_API_KEY environment variable is not set in Netlify.',
-        fix: 'Go to Netlify → Site configuration → Environment variables → add ANTHROPIC_API_KEY'
-      })
-    };
-  }
-
-  // Check key format
-  if (!ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
-    return {
-      statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: 'ANTHROPIC_API_KEY format looks wrong. It should start with sk-ant-',
-        fix: 'Get a fresh key from console.anthropic.com → API Keys'
-      })
+      body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not set in Netlify environment variables.' })
     };
   }
 
@@ -53,11 +33,7 @@ exports.handler = async (event) => {
   try {
     body = JSON.parse(event.body);
   } catch {
-    return {
-      statusCode: 400,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Invalid JSON in request body' })
-    };
+    return { statusCode: 400, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'Invalid JSON body' }) };
   }
 
   try {
@@ -69,7 +45,7 @@ exports.handler = async (event) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-5',
         max_tokens: body.max_tokens || 1000,
         system: body.system || '',
         messages: body.messages || []
@@ -78,12 +54,21 @@ exports.handler = async (event) => {
 
     const data = await response.json();
 
+    // If Anthropic returned an error, surface it clearly
+    if (!response.ok) {
+      return {
+        statusCode: response.status,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          error: `Anthropic API returned ${response.status}`,
+          anthropic_error: data
+        })
+      };
+    }
+
     return {
-      statusCode: response.status,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify(data)
     };
 
@@ -91,10 +76,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 502,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: 'Could not reach Anthropic API',
-        detail: err.message
-      })
+      body: JSON.stringify({ error: 'Could not reach Anthropic API', detail: err.message })
     };
   }
 };
