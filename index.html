@@ -838,7 +838,7 @@ async function callClaude(systemPrompt, userContent) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-4-5",
       max_tokens: 1000,
       system: systemPrompt,
       messages: [{ role: "user", content: userContent }]
@@ -884,7 +884,7 @@ async function runAnalysis() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
+            model: 'claude-sonnet-4-5',
             max_tokens: 1000,
             system: 'You are a market data summarizer. Respond ONLY with a JSON object, no markdown, no extra text.',
             messages: [{
@@ -934,7 +934,7 @@ Include top 6 tokens with realistic current data.`
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-sonnet-4-5',
           max_tokens: 1000,
           system: 'You are a financial news analyst. Respond ONLY with a JSON array, no markdown.',
           messages: [{
